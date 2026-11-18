@@ -6,6 +6,7 @@ import voluptuous as vol
 from homeassistant import config_entries
 from pymodbus.client import AsyncModbusTcpClient
 from pymodbus.framer import FramerType
+from pymodbus.pdu import DecodePDU
 
 from .client_manager import create_serial_client
 from .compat import OptionsFlowBase
@@ -50,6 +51,7 @@ from .data.solis_config import (
     mppt_count_from_registers,
     zonneplan_scaling_for_firmware,
 )
+from .rtu_framer import ResyncFramerRTU
 from .serial_proxy import SerialProxyClient, is_serial_proxy
 
 _LOGGER = logging.getLogger(__name__)
@@ -476,10 +478,13 @@ class ModbusConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
                 "retries": 1,
             }
 
-            if conn_type == CONN_TYPE_RTU_TCP:
-                client_kwargs["framer"] = FramerType.RTU
+            client = AsyncModbusTcpClient(
+                **client_kwargs,
+                framer=FramerType.RTU if conn_type == CONN_TYPE_RTU_TCP else FramerType.SOCKET,
+            )
 
-            client = AsyncModbusTcpClient(**client_kwargs)
+            if conn_type == CONN_TYPE_RTU_TCP:
+                client.ctx.framer = ResyncFramerRTU(DecodePDU(False))
 
         else:  # Serial
             serial_params = {

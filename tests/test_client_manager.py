@@ -32,7 +32,13 @@ class TestModbusClientManager(unittest.TestCase):
 
         client1 = self.manager.get_tcp_client("1.2.3.4", 502)
 
-        mock_client_cls.assert_called_once_with(host="1.2.3.4", port=502, timeout=5, retries=1)
+        mock_client_cls.assert_called_once_with(
+            host="1.2.3.4",
+            port=502,
+            timeout=5,
+            retries=1,
+            framer=FramerType.SOCKET,
+        )
         self.assertEqual(client1, mock_client)
         self.assertEqual(self.manager._clients["1.2.3.4:502"]["ref_count"], 1)
 

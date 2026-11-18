@@ -98,10 +98,13 @@ class ModbusClientManager:
                 "retries": 1,
             }
 
-            if rtu:
-                client_kwargs["framer"] = FramerType.RTU
+            client = AsyncModbusTcpClient(
+                **client_kwargs,
+                framer=FramerType.RTU if rtu else FramerType.SOCKET,
+            )
 
-            client = AsyncModbusTcpClient(**client_kwargs)
+            if rtu:
+                client.ctx.framer = ResyncFramerRTU(DecodePDU(False))
             self._clients[key] = {
                 "client": client,
                 "ref_count": 0,
